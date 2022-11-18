@@ -17,3 +17,5 @@
 *.log
 state-example
 a-line-cli
+
+.idea
