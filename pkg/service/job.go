@@ -72,6 +72,9 @@ func NewJobService() *JobService {
 
 // SaveJob save pipeline job
 func (svc *JobService) SaveJob(name string, job *model.Job) error {
+	if name != job.Name {
+		job.Name = name
+	}
 	// serializes yaml struct
 	data, err := yaml.Marshal(job)
 	if err != nil {
@@ -148,6 +151,9 @@ func (svc *JobService) UpdateJob(oldName string, newName string, job *model.Job)
 		log.Println("update job failed,job file not exist", err.Error())
 		return err
 	}
+	if oldName != job.Name {
+		job.Name = oldName
+	}
 	if newName != "" {
 		newDir := filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME+"/"+newName)
 		err = os.Rename(oldDir, newDir)
@@ -163,6 +169,9 @@ func (svc *JobService) UpdateJob(oldName string, newName string, job *model.Job)
 			return err
 		}
 		src = newSrc
+		if newName != job.Name {
+			job.Name = newName
+		}
 	}
 	// serializes yaml struct
 	data, err := yaml.Marshal(job)
