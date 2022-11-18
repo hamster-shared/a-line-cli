@@ -38,6 +38,8 @@ func (h *HttpServer) StartHttpServer() {
 	r.POST("/pipeline/re-exec/:name", h.handlerServer.reExecuteJob)
 	//stop pipeline job
 	r.POST("/pipeline/stop/:name", h.handlerServer.stopJobDetail)
+	r.GET("/pipeline/:name/logs/:id", h.handlerServer.getJobLog)
+	r.GET("/pipeline/:name/logs/:id/:stagename", h.handlerServer.getJobStageLog)
 	r.GET("/ping", func(c *gin.Context) {
 		//输出json结果给调用方
 		Success("", c)

@@ -197,3 +197,30 @@ func (h *HandlerServer) stopJobDetail(gin *gin.Context) {
 	}
 	Success("", gin)
 }
+
+// getJobLog get pipeline job detail logs
+func (h *HandlerServer) getJobLog(gin *gin.Context) {
+	name := gin.Param("name")
+	idStr := gin.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		Fail(err.Error(), gin)
+		return
+	}
+	data := h.jobService.GetJobLog(name, id)
+	Success(data, gin)
+}
+
+// getJobStageLog get job detail stage logs
+func (h *HandlerServer) getJobStageLog(gin *gin.Context) {
+	name := gin.Param("name")
+	idStr := gin.Param("id")
+	stageName := gin.Param("stagename")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		Fail(err.Error(), gin)
+		return
+	}
+	data := h.jobService.GetJobStageLog(name, id, stageName)
+	Success(data, gin)
+}
