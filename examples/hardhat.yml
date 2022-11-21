@@ -23,7 +23,7 @@ stages:
           npm install --save-dev hardhat
           npx hardhat compile
       - name: save artifactory
-        use: hamster/artifactory
+        uses: hamster/artifactory
         with:
           name: some.zip
           path: contracts/*.sol

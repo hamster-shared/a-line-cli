@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hamster-shared/a-line-cli/pkg/logger"
 	"github.com/sirupsen/logrus"
 )
@@ -33,11 +34,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestParseLogFile(t *testing.T) {
-	result, err := ParseLogFile("log/test-10086-2022-11-17-15:34:44.log")
+	result, err := ParseLogFile("/home/vihv/pipelines/jobs/test/job-details-log/10001.log")
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(result)
+	spew.Dump(result)
 }
 
 func TestContent(t *testing.T) {

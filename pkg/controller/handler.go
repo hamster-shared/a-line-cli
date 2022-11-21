@@ -181,6 +181,10 @@ func (h *HandlerServer) reExecuteJob(gin *gin.Context) {
 		return
 	}
 	err = h.jobService.ReExecuteJob(name, id)
+	job := h.jobService.GetJob(name)
+	jobDetail := h.jobService.GetJobDetail(name, id)
+	node := h.dispatch.DispatchNode(job)
+	h.dispatch.SendJob(jobDetail, node)
 	if err != nil {
 		Fail(err.Error(), gin)
 		return
@@ -197,11 +201,16 @@ func (h *HandlerServer) stopJobDetail(gin *gin.Context) {
 		Fail(err.Error(), gin)
 		return
 	}
+
 	err = h.jobService.StopJobDetail(name, id)
 	if err != nil {
 		Fail(err.Error(), gin)
 		return
 	}
+	job := h.jobService.GetJob(name)
+	jobDetail := h.jobService.GetJobDetail(name, id)
+	node := h.dispatch.DispatchNode(job)
+	h.dispatch.CancelJob(jobDetail, node)
 	Success("", gin)
 }
 

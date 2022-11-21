@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hamster-shared/a-line-cli/pkg/consts"
 	"github.com/hamster-shared/a-line-cli/pkg/logger"
+	"github.com/hamster-shared/a-line-cli/pkg/utils"
 )
 
 type Output struct {
@@ -25,9 +27,20 @@ type Output struct {
 	timeConsuming      TimeConsuming
 }
 
+type Log struct {
+	StartTime time.Time
+	EndTime   time.Time
+	Duration  time.Duration
+	Stages    []StageOutput
+	Lines     []string
+}
+
 type StageOutput struct {
-	Name    string
-	Content string
+	StartTime time.Time
+	EndTime   time.Time
+	Duration  time.Duration
+	Name      string
+	Lines     []string
 }
 
 type TimeConsuming struct {
@@ -111,6 +124,7 @@ func (o *Output) Done() {
 			v.Duration = v.EndTime.Sub(v.StartTime)
 			v.Done = true
 			o.stageTimeConsuming[k] = v
+			o.WriteLine(fmt.Sprintf("[TimeConsuming] EndTime: %s, Duration: %s", v.EndTime.Format("2006-01-02 15:04:05"), v.Duration))
 		}
 	}
 
@@ -119,7 +133,7 @@ func (o *Output) Done() {
 	o.timeConsuming.EndTime = now
 	o.timeConsuming.Duration = now.Sub(o.timeConsuming.StartTime)
 	o.flush(o.buffer[o.fileCursor:])
-	o.flush([]string{"\n\n\n[Job] Finished on " + now.Format("2006-01-02 15:04:05")})
+	o.flush([]string{fmt.Sprintf("\n\n\n[Job] Finished on %s, Duration: %s", now.Format("2006-01-02 15:04:05"), o.timeConsuming.Duration)})
 	o.f.Close()
 	o.mu.Unlock()
 }
@@ -165,6 +179,7 @@ func (o *Output) NewStage(name string) {
 			v.Duration = v.EndTime.Sub(v.StartTime)
 			v.Done = true
 			o.stageTimeConsuming[k] = v
+			o.WriteLine(fmt.Sprintf("[TimeConsuming] EndTime: %s, Duration: %s", v.EndTime.Format("2006-01-02 15:04:05"), v.Duration))
 		}
 	}
 
@@ -172,8 +187,10 @@ func (o *Output) NewStage(name string) {
 	o.WriteLine("\n")
 	o.WriteLine("\n")
 	o.WriteLine("[Pipeline] Stage: " + name)
+	startTime := time.Now().Local()
+	o.WriteLine("[TimeConsuming] StartTime: " + startTime.Format("2006-01-02 15:04:05"))
 	o.stageTimeConsuming[name] = TimeConsuming{
-		StartTime: time.Now().Local(),
+		StartTime: startTime,
 	}
 }
 
@@ -228,8 +245,13 @@ func (o *Output) initFile() error {
 	}
 
 	if o.filename == "" {
-		o.filename = o.Name + "-" + fmt.Sprint(o.ID) + "-" + time.Now().Local().Format("2006-01-02-15:04:05") + ".log"
-		o.filename = filepath.Join("log", o.filename)
+		o.filename = filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME, o.Name, consts.JOB_DETAIL_LOG_DIR_NAME, fmt.Sprintf("%d.log", o.ID))
+	}
+
+	basepath := filepath.Dir(o.filename)
+	if err := os.MkdirAll(basepath, 0755); err != nil {
+		o.mu.Unlock()
+		return err
 	}
 
 	f, err := os.OpenFile(o.filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -250,21 +272,21 @@ func (o *Output) Filename() string {
 
 // StageOutputList 返回存储了 Stage 输出的列表
 func (o *Output) StageOutputList() []StageOutput {
-	return parseLogLines(o.buffer[:])
+	return parseLogLines(o.buffer[:]).Stages
 }
 
 // ParseLogFile 解析日志文件，返回存储了 Stage 输出的列表
-func ParseLogFile(filename string) ([]StageOutput, error) {
-	lines, err := readFileLines(filename)
+func ParseLogFile(filename string) (Log, error) {
+	lines, err := ReadFileLines(filename)
 	if err != nil {
-		return nil, err
+		return Log{}, err
 	}
 	result := parseLogLines(lines)
 	return result, nil
 }
 
-// 读取文件中的行
-func readFileLines(filename string) ([]string, error) {
+// ReadFileLines 读取文件中的行
+func ReadFileLines(filename string) ([]string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -279,7 +301,10 @@ func readFileLines(filename string) ([]string, error) {
 	return lines, nil
 }
 
-func parseLogLines(lines []string) []StageOutput {
+func parseLogLines(lines []string) Log {
+	var log Log
+	log.Lines = lines
+
 	var stageName = "unknown"
 	var stageNameList []string
 
@@ -287,6 +312,23 @@ func parseLogLines(lines []string) []StageOutput {
 	var stageOutputMap = make(map[string][]string)
 	for _, line := range lines {
 		if strings.HasPrefix(line, "[Job]") || line == "\n" || line == "" {
+			if strings.HasPrefix(line, "[Job] Started on ") {
+				startTime := strings.TrimPrefix(line, "[Job] Started on ")
+				log.StartTime, _ = time.Parse("2006-01-02 15:04:05", startTime)
+			}
+			if strings.HasPrefix(line, "[Job] Finished on ") {
+				endTimeAndDuration := strings.TrimPrefix(line, "[Job] Finished on ")
+				endTimeAndDurationSlice := strings.Split(endTimeAndDuration, ",")
+				endTime := endTimeAndDurationSlice[0]
+				log.EndTime, _ = time.Parse("2006-01-02 15:04:05", endTime)
+
+				if len(endTimeAndDurationSlice) > 1 {
+					duration := endTimeAndDurationSlice[1]
+					duration = strings.TrimPrefix(duration, " Duration: ")
+					log.Duration, _ = time.ParseDuration(duration)
+				}
+			}
+
 			continue
 		}
 		if strings.HasPrefix(line, "[Pipeline] Stage: ") {
@@ -297,18 +339,40 @@ func parseLogLines(lines []string) []StageOutput {
 		stageOutputMap[stageName] = append(stageOutputMap[stageName], line)
 	}
 
-	var stageOutputList []StageOutput
 	for k, v := range stageOutputMap {
 		for i := range stageNameList {
 			if stageNameList[i] == k {
-				stageOutput := StageOutput{
-					Name:    k,
-					Content: strings.Join(v, "\n"),
+				var startTime, endTime time.Time
+				var duration time.Duration
+				for _, line := range v {
+					if strings.HasPrefix(line, "[TimeConsuming] StartTime: ") {
+						startTimeString := strings.TrimPrefix(line, "[TimeConsuming] StartTime: ")
+						startTime, _ = time.Parse("2006-01-02 15:04:05", startTimeString)
+					}
+					if strings.HasPrefix(line, "[TimeConsuming] EndTime: ") {
+						endTimeString := strings.TrimPrefix(line, "[TimeConsuming] EndTime: ")
+						endTimeAndDurationSlice := strings.Split(endTimeString, ",")
+						endTime, _ = time.Parse("2006-01-02 15:04:05", endTimeAndDurationSlice[0])
+
+						if len(endTimeAndDurationSlice) > 1 {
+							durationString := endTimeAndDurationSlice[1]
+							durationString = strings.TrimPrefix(durationString, " Duration: ")
+							duration, _ = time.ParseDuration(durationString)
+						}
+					}
 				}
-				stageOutputList = append(stageOutputList, stageOutput)
+
+				stageOutput := StageOutput{
+					Name:      k,
+					Lines:     v,
+					StartTime: startTime,
+					EndTime:   endTime,
+					Duration:  duration,
+				}
+				log.Stages = append(log.Stages, stageOutput)
 			}
 		}
 	}
 
-	return stageOutputList
+	return log
 }

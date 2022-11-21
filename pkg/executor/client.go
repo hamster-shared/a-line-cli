@@ -53,7 +53,13 @@ func (c *ExecutorClient) Main() {
 
 		//6. 异步执行pipeline
 		go func() {
-			err := c.executor.Execute(jobId, job)
+			var err error
+			if queueMessage.Command == model.Command_Start {
+				err = c.executor.Execute(jobId, job)
+			} else if queueMessage.Command == model.Command_Stop {
+				err = c.executor.Cancel(jobId, job)
+			}
+
 			if err != nil {
 
 			}

@@ -3,19 +3,52 @@ POST http://localhost:8080/pipeline
 Content-Type: application/json
 
 {
-  "name": "test2",
-  "yaml": "version: \"1.0\"\nname: some-test2\nstages:\n  git-clone:\n    steps:\n      - name: git-clone\n        uses: git-checkout\n        with:\n          url: https://gitee.com/mohaijiang/spring-boot-example.git\n          branch: master"
+  "name": "test3",
+  "yaml": "version: \"1.0\"\nname: my-test2\nstages:\n  git-clone:\n    steps:\n      - name: git-clone\n        uses: git-checkout\n        with:\n          url: https://gitee.com/mohaijiang/spring-boot-example.git\n          branch: master\n  code-compile:\n    needs:\n      - git-clone\n    steps:\n      - name: code-compile\n        runs-on: maven:3.5-jdk-8\n        run: |\n          mvn clean package -Dmaven.test.skip=true"
 }
 
-
-### exec job
-POST http://localhost:8080/pipeline/exec/test2
+### update pipeline job
+PUT http://localhost:8080/pipeline/test3?oldName=test3
 Content-Type: application/json
 
+{
+  "newName": "test2",
+  "yaml": "version: \"1.0\"\nname: test2\nstages:\n  git-clone:\n    steps:\n      - name: git-clone\n        uses: git-checkout\n        with:\n          url: https://gitee.com/mohaijiang/spring-boot-example.git\n          branch: master"
+}
+
+### exec job
+POST http://localhost:8080/pipeline/test2/exec
+Content-Type: application/json
+
+### re exec job
+POST http://localhost:8080/pipeline/test2/0/re-exec
 
 ### get pipeline job
 GET http://localhost:8080/pipeline/test2
 
+### delete pipeline job
+DELETE http://localhost:8080/pipeline/test2
 
 ### get pipeline job details
 GET http://localhost:8080/pipeline/test2/details?page=1&size=10
+
+
+### get pipeline job detail
+GET http://localhost:8080/pipeline/test2/detail/0
+
+
+### get pipelie job log
+GET http://localhost:8080/pipeline/test2/logs/0
+
+### delete pipelie detail
+DELETE http://localhost:8080/pipeline/test2/detail/0
+
+### exec job
+POST http://localhost:8080/pipeline/test3/exec
+Content-Type: application/json
+
+### cancel job
+POST http://localhost:8080/pipeline/test3/7/stop
+
+###
+GET http://localhost:8080/pipeline/test3/logs/9

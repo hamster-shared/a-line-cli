@@ -19,23 +19,25 @@ const (
 	STATUS_RUNNING Status = 1
 	STATUS_FAIL    Status = 2
 	STATUS_SUCCESS Status = 3
+	STATUS_STOP    Status = 4
 )
 
 type Job struct {
 	Version string           `yaml:"version"`
 	Name    string           `yaml:"name"`
 	Stages  map[string]Stage `yaml:"stages"`
-	Output  *output.Output
 }
 
 type JobDetail struct {
 	Id int
 	Job
-	Status    Status
-	Stages    []StageDetail
-	StartTime time.Time
-	Duration  time.Duration
+	Status      Status
+	TriggerMode string //触发方式
+	Stages      []StageDetail
+	StartTime   time.Time
+	Duration    time.Duration
 	ActionResult
+	Output *output.Output
 }
 
 func (jd *JobDetail) ToString() string {

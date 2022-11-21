@@ -2,24 +2,27 @@ package service
 
 import (
 	"errors"
-	"github.com/hamster-shared/a-line-cli/pkg/consts"
-	"github.com/hamster-shared/a-line-cli/pkg/model"
-	"github.com/hamster-shared/a-line-cli/pkg/utils"
-	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/hamster-shared/a-line-cli/pkg/consts"
+	"github.com/hamster-shared/a-line-cli/pkg/logger"
+	"github.com/hamster-shared/a-line-cli/pkg/model"
+	"github.com/hamster-shared/a-line-cli/pkg/output"
+	"github.com/hamster-shared/a-line-cli/pkg/utils"
+	"gopkg.in/yaml.v3"
 	"time"
 )
 
 type IJobService interface {
-	//SaveJob 保存Job
+	//SaveJob 保存 Job
 	SaveJob(name string, job *model.Job) error
 
-	// GetJob 获取Job
+	// GetJob 获取 Job
 	GetJob(name string) *model.Job
 
 	JobList(keyword string, page, size int) *model.JobPage
@@ -30,12 +33,12 @@ type IJobService interface {
 	//DeleteJob delete job
 	DeleteJob(name string) error
 
-	// SaveJobDetail 保存Job详情
+	// SaveJobDetail 保存 Job 详情
 	SaveJobDetail(name string, job *model.JobDetail) error
 
 	UpdateJobDetail(name string, job *model.JobDetail) error
 
-	// GetJobDetail 获取Job详情
+	// GetJobDetail 获取 Job 详情
 	GetJobDetail(name string, id int) *model.JobDetail
 
 	//JobDetailList get job detail list
@@ -53,22 +56,17 @@ type IJobService interface {
 	// StopJobDetail stop pipeline job
 	StopJobDetail(name string, pipelineDetailId int) error
 
-	// GetJobLog 获取job日志
+	// GetJobLog 获取 job 日志
 	GetJobLog(name string, pipelineDetailId int) *model.JobLog
-	// GetJobStageLog 获取job的stage 日志
-	GetJobStageLog(name string, pipelineDetailId int, stageName string) map[string]*model.JobStageLog
+	// GetJobStageLog 获取 job 的 stage 日志
+	GetJobStageLog(name string, pipelineDetailId int, stageName string) *model.JobStageLog
 }
 
 type JobService struct {
-	store   map[string]*model.Job
-	details map[string]*model.JobDetail
 }
 
 func NewJobService() *JobService {
-	return &JobService{
-		store:   make(map[string]*model.Job),
-		details: make(map[string]*model.JobDetail),
-	}
+	return &JobService{}
 }
 
 // SaveJob save pipeline job
@@ -462,7 +460,7 @@ func (svc *JobService) ExecuteJob(name string) (*model.JobDetail, error) {
 	jobDetail.StartTime = time.Now()
 	jobDetail.Stages = stageDetail
 	log.Println(jobDetail)
-	//TODO... 执行pipeline job
+	//TODO... 执行 pipeline job
 
 	//create and save job detail
 	return &jobDetail, svc.SaveJobDetail(name, &jobDetail)
@@ -473,7 +471,7 @@ func (svc *JobService) ReExecuteJob(name string, pipelineDetailId int) error {
 	//get job detail data
 	jobDetailData := svc.GetJobDetail(name, pipelineDetailId)
 	println(jobDetailData)
-	//todo 重新执行pipeline job
+	//todo 重新执行 pipeline job
 	return nil
 }
 
@@ -486,16 +484,44 @@ func (svc *JobService) StopJobDetail(name string, pipelineDetailId int) error {
 	return nil
 }
 
-// GetJobLog 获取job日志
+// GetJobLog 获取 job 日志
 func (svc *JobService) GetJobLog(name string, pipelineDetailId int) *model.JobLog {
+	src := filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME, name, consts.JOB_DETAIL_LOG_DIR_NAME, strconv.Itoa(pipelineDetailId)+".log")
 
-	//TODO ... 实现获取日志
-	return nil
+	fileLog, err := output.ParseLogFile(src)
+	if err != nil {
+		logger.Errorf("parse log file failed, %v", err)
+		return nil
+	}
+
+	jobLog := &model.JobLog{
+		StartTime: fileLog.StartTime,
+		Duration:  fileLog.Duration,
+		Content:   strings.Join(fileLog.Lines, "\n"),
+		LastLine:  len(fileLog.Lines),
+	}
+
+	return jobLog
 }
 
-// GetJobStageLog 获取job的stage 日志
-func (svc *JobService) GetJobStageLog(name string, pipelineDetailId int, stageName string) map[string]*model.JobStageLog {
+// GetJobStageLog 获取 job 的 stage 日志
+func (svc *JobService) GetJobStageLog(name string, pipelineDetailId int, stageName string) *model.JobStageLog {
+	src := filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME, name, consts.JOB_DETAIL_LOG_DIR_NAME, strconv.Itoa(pipelineDetailId)+".log")
 
-	//TODO... 实现获取阶段日志
+	fileLog, err := output.ParseLogFile(src)
+	if err != nil {
+		logger.Errorf("parse log file failed, %v", err)
+		return nil
+	}
+	for _, stage := range fileLog.Stages {
+		if stage.Name == stageName {
+			return &model.JobStageLog{
+				StartTime: stage.StartTime,
+				Duration:  stage.Duration,
+				Content:   strings.Join(stage.Lines, "\n"),
+				LastLine:  len(stage.Lines),
+			}
+		}
+	}
 	return nil
 }

@@ -1,11 +1,13 @@
 package service
 
 import (
+	"log"
+	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hamster-shared/a-line-cli/pkg/model"
 	"github.com/stretchr/testify/assert"
 	ass "gotest.tools/v3/assert"
-	"log"
-	"testing"
 )
 
 func Test_SaveJob(t *testing.T) {
@@ -152,4 +154,22 @@ func Test_JobDetailList(t *testing.T) {
 func Test_ExecuteJob(t *testing.T) {
 	jobService := NewJobService()
 	jobService.ExecuteJob("sun")
+}
+
+func TestGetJobLog(t *testing.T) {
+	jobService := NewJobService()
+	log := jobService.GetJobLog("test", 10001)
+	if log == nil {
+		t.Error("log is nil")
+	}
+	spew.Dump(log)
+}
+
+func TestGetStageLog(t *testing.T) {
+	jobService := NewJobService()
+	log := jobService.GetJobStageLog("test", 10001, "第一阶段")
+	if log == nil {
+		t.Error("log is nil")
+	}
+	spew.Dump(log)
 }
