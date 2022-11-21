@@ -2,13 +2,16 @@ package action
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/hamster-shared/a-line-cli/pkg/model"
 	"github.com/hamster-shared/a-line-cli/pkg/output"
+	shell "github.com/ipfs/go-ipfs-api"
 	"os"
+	path2 "path"
 )
 
-// 将目录上传到ipfs
+// IpfsAction Upload files/directories to ipfs
 type IpfsAction struct {
 	path   string
 	output *output.Output
@@ -25,21 +28,75 @@ func NewIpfsAction(step model.Step, ctx context.Context, output *output.Output) 
 
 func (a *IpfsAction) Pre() error {
 	a.output.NewStage("ipfs")
-
-	//TODO ... 检验 ipfs 命令是否存在
-	fmt.Println("ipfs hello world pre")
+	newShell := shell.NewShell("http://localhost:5001")
+	version, s, err := newShell.Version()
+	if err != nil {
+		return errors.New("get workdir error")
+	}
+	fmt.Println(fmt.Sprintf("ipfs version is %s, commit sha is %s", version, s))
 	return nil
 }
 
 func (a *IpfsAction) Hook() (*model.ActionResult, error) {
 	a.output.NewStage("ipfs")
 
-	//TODO ... 上传目录到ipfs
+	stack := a.ctx.Value(STACK).(map[string]interface{})
 
-	fmt.Println("ipfs hello world hook")
-	return nil, nil
+	workdir, ok := stack["workdir"].(string)
+	if !ok {
+		return nil, errors.New("get workdir error")
+	}
+
+	path := path2.Join(workdir, a.path)
+	fmt.Println(path)
+	fi, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("get path fail, err is  %s", err.Error()))
+	}
+	isDir := fi.IsDir()
+	newShell := shell.NewShell("http://localhost:5001")
+	var cid string
+	if isDir {
+		cid, err = newShell.AddDir(path)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("ipfs add dir fail, err is  %s", err.Error()))
+		}
+	} else {
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("open file fail, err is  %s", err.Error()))
+		}
+		cid, err = newShell.Add(file)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("ipfs add file fail, err is  %s", err.Error()))
+		}
+	}
+
+	url := "http://localhost:37774/ipfs/" + cid
+	actionResult := model.ActionResult{
+		Artifactorys: []model.Artifactory{
+			{
+				Name: a.path,
+				Url:  url,
+			},
+		},
+		Reports: []model.Report{
+			{
+				Id:   1,
+				Url:  url,
+				Type: 1,
+			},
+		},
+	}
+	fmt.Println(actionResult)
+	return &actionResult, nil
 }
 
 func (a *IpfsAction) Post() error {
-	return os.RemoveAll(a.path)
+	stack := a.ctx.Value(STACK).(map[string]interface{})
+	workdir, ok := stack["workdir"].(string)
+	if !ok {
+		return errors.New("get workdir error")
+	}
+	return os.RemoveAll(workdir)
 }

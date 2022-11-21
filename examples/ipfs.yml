@@ -8,11 +8,11 @@ stages:
         with:
           url: https://gitee.com/mohaijiang/spring-boot-example.git
           branch: master
-  code-compile:
+  ipfs:
     needs:
       - git-clone
     steps:
-      - name: save artifactory
-        use: ipfs
+      - name: update ipfs
+        uses: ipfs
         with:
-          path: README.md
+          path: src

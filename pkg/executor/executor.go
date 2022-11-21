@@ -131,7 +131,7 @@ func (e *Executor) Execute(id int, job *model.Job) error {
 				err = executeAction(ah, jobWrapper)
 			}
 			if step.Uses == "ipfs" {
-				ah = action2.NewIpfsAction(step, ctx, out)
+				ah = action2.NewIpfsAction(step, ctx, job.Output)
 				err = executeAction(ah, jobWrapper)
 			}
 			if strings.Contains(step.Uses, "/") {
