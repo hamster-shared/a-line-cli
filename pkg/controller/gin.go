@@ -27,17 +27,17 @@ func (h *HttpServer) StartHttpServer() {
 	//get pipeline job list
 	r.GET("/pipeline", h.handlerServer.pipelineList)
 	//get pipeline job detail info
-	r.GET("/pipeline/:name/detail/:id", h.handlerServer.getPipelineDetail)
+	r.GET("/pipeline/:name/detail", h.handlerServer.getPipelineDetail)
 	//delete pipeline job detail
-	r.DELETE("/pipeline/:name/detail/:id", h.handlerServer.deleteJobDetail)
+	r.DELETE("/pipeline/:name/detail", h.handlerServer.deleteJobDetail)
 	//get pipeline job detail list
-	r.GET("/pipeline/:name/details", h.handlerServer.getPipelineDetailList)
+	r.GET("/pipeline/:name/detail/list", h.handlerServer.getPipelineDetailList)
 	//exec pipeline job
-	r.POST("/pipeline/:name/exec", h.handlerServer.execPipeline)
+	r.POST("/pipeline/exec/:name", h.handlerServer.execPipeline)
 	//re exec pipeline detail job
-	r.POST("/pipeline/:name/:id/re-exec", h.handlerServer.reExecuteJob)
+	r.POST("/pipeline/re-exec/:name", h.handlerServer.reExecuteJob)
 	//stop pipeline job
-	r.POST("/pipeline/:name/:id/stop", h.handlerServer.stopJobDetail)
+	r.POST("/pipeline/stop/:name", h.handlerServer.stopJobDetail)
 	r.GET("/pipeline/:name/logs/:id", h.handlerServer.getJobLog)
 	r.GET("/pipeline/:name/logs/:id/:stagename", h.handlerServer.getJobStageLog)
 	r.GET("/ping", func(c *gin.Context) {
