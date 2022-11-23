@@ -119,6 +119,7 @@ func (e *Executor) Execute(id int, job *model.Job) error {
 		stageWapper.Status = model.STATUS_RUNNING
 		stageWapper.StartTime = time.Now()
 		jobWrapper.Stages[index] = stageWapper
+		jobWrapper.Output.NewStage(stageWapper.Name)
 		e.jobService.SaveJobDetail(jobWrapper.Name, jobWrapper)
 		for _, step := range stageWapper.Stage.Steps {
 			var ah action2.ActionHandler
@@ -177,7 +178,8 @@ func (e *Executor) Execute(id int, job *model.Job) error {
 		jobWrapper.Status = model.STATUS_FAIL
 	}
 
-	jobWrapper.Duration = time.Now().Sub(jobWrapper.StartTime)
+	dataTime := time.Now().Sub(jobWrapper.StartTime)
+	jobWrapper.Duration = dataTime.Milliseconds()
 	e.jobService.SaveJobDetail(jobWrapper.Name, jobWrapper)
 
 	//TODO ... 发送结果到队列

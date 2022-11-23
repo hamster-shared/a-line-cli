@@ -34,7 +34,7 @@ type JobVo struct {
 	Stages           map[string]Stage `yaml:"stages" json:"stages"`
 	Status           Status           `json:"status"`
 	StartTime        time.Time        `yaml:"startTime"json:"startTime"`
-	Duration         time.Duration    `json:"duration"`
+	Duration         int64            `json:"duration"`
 	TriggerMode      string           `yaml:"triggerMode"json:"triggerMode"`
 	PipelineDetailId int              `json:"pipelineDetailId"`
 }
@@ -46,7 +46,7 @@ type JobDetail struct {
 	TriggerMode  string        `yaml:"triggerMode"json:"triggerMode"`
 	Stages       []StageDetail `json:"stages"`
 	StartTime    time.Time     `yaml:"startTime"json:"startTime"`
-	Duration     time.Duration `json:"duration"`
+	Duration     int64         `json:"duration"`
 	ActionResult `yaml:"actionResult" json:"actionResult"`
 	Output       *output.Output `json:"output"`
 }
