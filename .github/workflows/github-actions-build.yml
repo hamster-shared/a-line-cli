@@ -9,7 +9,7 @@ jobs:
   package:
     strategy:
       matrix:
-        platform: [ ubuntu-latest,macos-latest,windows-latest ]
+        platform: [ windows-latest ]
         go-version: [1.19]
         node-version: [18]
     runs-on: ${{ matrix.platform }}
@@ -39,7 +39,9 @@ jobs:
           npm install && npm run build
           copy .\dist ..\pkg\controller
       - name: go build
-        run: go mod tidy && go build -o a-line-cli
+        run: |
+          ls pkg\controller
+          go mod tidy && go build -o a-line-cli
 
       - name: upload artifacts linux
         if: matrix.platform == 'ubuntu-latest'
