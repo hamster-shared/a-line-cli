@@ -68,7 +68,6 @@ func (a *ArtifactoryAction) Pre() error {
 }
 
 func (a *ArtifactoryAction) Hook() (*model.ActionResult, error) {
-	a.output.NewStage("artifactory")
 	stack := a.ctx.Value(STACK).(map[string]interface{})
 	jobName, ok := stack["name"].(string)
 	if !ok {

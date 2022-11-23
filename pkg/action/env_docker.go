@@ -31,8 +31,6 @@ func NewDockerEnv(step model.Step, ctx context.Context, output *output.Output) *
 }
 
 func (e *DockerEnv) Pre() error {
-	e.output.NewStage("docker env")
-
 	stack := e.ctx.Value(STACK).(map[string]interface{})
 
 	jobName := stack["name"].(string)

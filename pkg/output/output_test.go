@@ -10,11 +10,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestNew(t *testing.T) {
+func writeToFile() string {
 	logger.Init().ToStdoutAndFile().SetLevel(logrus.TraceLevel)
 	testOutput := New("test", 10001)
 
 	testOutput.NewStage("第一阶段")
+	testOutput.NewStep("第一步")
+	testOutput.WriteLine("第一行")
+	testOutput.WriteLine("第二行")
+	testOutput.WriteLine("第三行")
+	testOutput.WriteLine("第四行")
+	testOutput.WriteLine("第五行")
+	testOutput.NewStep("第二步")
 	testOutput.WriteLine("第一行")
 	testOutput.WriteLine("第二行")
 	testOutput.WriteLine("第三行")
@@ -28,13 +35,21 @@ func TestNew(t *testing.T) {
 	testOutput.WriteLine("第四行")
 	testOutput.WriteLine("第五行")
 
+	testOutput.NewStage("第三阶段")
+	testOutput.WriteLine("第一行")
+	testOutput.WriteLine("第二行")
+	testOutput.WriteLine("第三行")
+	testOutput.WriteLine("第四行")
+	testOutput.WriteLine("第五行")
+
 	testOutput.Done()
 
 	fmt.Println("文件写入到", testOutput.Filename())
+	return testOutput.Filename()
 }
 
 func TestParseLogFile(t *testing.T) {
-	result, err := ParseLogFile("/home/vihv/pipelines/jobs/test/job-details-log/10001.log")
+	result, err := ParseLogFile(writeToFile())
 	if err != nil {
 		t.Error(err)
 	}
@@ -43,7 +58,7 @@ func TestParseLogFile(t *testing.T) {
 
 func TestContent(t *testing.T) {
 	logger.Init().ToStdoutAndFile().SetLevel(logrus.TraceLevel)
-	testOutput := New("test", 10085)
+	testOutput := New("test", 10083)
 
 	testOutput.NewStage("第一阶段")
 	testOutput.WriteLine("第一行")
@@ -75,6 +90,13 @@ func TestStageOutputList(t *testing.T) {
 	testOutput := New("test", 10000)
 
 	testOutput.NewStage("第一阶段")
+	testOutput.NewStep("第一步")
+	testOutput.WriteLine("第一行")
+	testOutput.WriteLine("第二行")
+	testOutput.WriteLine("第三行")
+	testOutput.WriteLine("第四行")
+	testOutput.WriteLine("第五行")
+	testOutput.NewStep("第二步")
 	testOutput.WriteLine("第一行")
 	testOutput.WriteLine("第二行")
 	testOutput.WriteLine("第三行")
@@ -82,15 +104,18 @@ func TestStageOutputList(t *testing.T) {
 	testOutput.WriteLine("第五行")
 
 	testOutput.NewStage("第二阶段")
+	testOutput.NewStep("第一步")
 	testOutput.WriteLine("第一行")
 	testOutput.WriteLine("第二行")
 	testOutput.WriteLine("第三行")
 	testOutput.WriteLine("第四行")
 	testOutput.WriteLine("第五行")
-
-	if len(testOutput.StageOutputList()) != 2 {
-		t.Error("stage output list length error")
-	}
+	testOutput.NewStep("第二步")
+	testOutput.WriteLine("第一行")
+	testOutput.WriteLine("第二行")
+	testOutput.WriteLine("第三行")
+	testOutput.WriteLine("第四行")
+	testOutput.WriteLine("第五行")
 
 	testOutput.Done()
 }

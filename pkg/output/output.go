@@ -24,6 +24,7 @@ type Output struct {
 	fileCursor         int
 	bufferCursor       int
 	stageTimeConsuming map[string]TimeConsuming
+	stepTimeConsuming  map[string]TimeConsuming
 	timeConsuming      TimeConsuming
 }
 
@@ -60,6 +61,7 @@ func New(name string, id int) *Output {
 			StartTime: time.Now().Local(),
 		},
 		stageTimeConsuming: make(map[string]TimeConsuming),
+		stepTimeConsuming:  make(map[string]TimeConsuming),
 	}
 
 	err := o.initFile()
@@ -73,6 +75,10 @@ func New(name string, id int) *Output {
 	o.WriteLine("[Job] Started on " + o.timeConsuming.StartTime.Format("2006-01-02 15:04:05"))
 
 	return o
+}
+
+func (o *Output) generateFilename() string {
+	return filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME, o.Name, consts.JOB_DETAIL_LOG_DIR_NAME, fmt.Sprintf("%d.log", o.ID))
 }
 
 // Duration 返回持续时间
@@ -172,6 +178,13 @@ func (o *Output) NewContent() string {
 // NewStage 会写入以 [Pipeline] Stage: 开头的一行，表示一个新的 Stage 开始
 func (o *Output) NewStage(name string) {
 
+	// 将之前的 Step 标记为完成
+	for k, v := range o.stepTimeConsuming {
+		if !v.Done {
+			v.Done = true
+			o.stepTimeConsuming[k] = v
+		}
+	}
 	// 将之前的 Stage 标记为完成
 	for k, v := range o.stageTimeConsuming {
 		if !v.Done {
@@ -192,6 +205,20 @@ func (o *Output) NewStage(name string) {
 	o.stageTimeConsuming[name] = TimeConsuming{
 		StartTime: startTime,
 	}
+}
+
+func (o *Output) NewStep(name string) {
+	// 将之前的 Step 标记为完成
+	for k, v := range o.stepTimeConsuming {
+		if !v.Done {
+			v.Done = true
+			o.stepTimeConsuming[k] = v
+		}
+	}
+
+	o.WriteLine("\n")
+	o.WriteLine("[Pipeline] Step: " + name)
+	o.stepTimeConsuming[name] = TimeConsuming{}
 }
 
 // 在一个协程中定时刷入文件
@@ -245,7 +272,7 @@ func (o *Output) initFile() error {
 	}
 
 	if o.filename == "" {
-		o.filename = filepath.Join(utils.DefaultConfigDir(), consts.JOB_DIR_NAME, o.Name, consts.JOB_DETAIL_LOG_DIR_NAME, fmt.Sprintf("%d.log", o.ID))
+		o.filename = o.generateFilename()
 	}
 
 	basepath := filepath.Dir(o.filename)
@@ -265,17 +292,11 @@ func (o *Output) initFile() error {
 	return nil
 }
 
-// Filename 返回文件名
 func (o *Output) Filename() string {
 	return o.filename
 }
 
-// StageOutputList 返回存储了 Stage 输出的列表
-func (o *Output) StageOutputList() []StageOutput {
-	return parseLogLines(o.buffer[:]).Stages
-}
-
-// ParseLogFile 解析日志文件，返回存储了 Stage 输出的列表
+// ParseLogFile 解析日志文件
 func ParseLogFile(filename string) (Log, error) {
 	lines, err := ReadFileLines(filename)
 	if err != nil {

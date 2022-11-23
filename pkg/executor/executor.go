@@ -125,26 +125,32 @@ func (e *Executor) Execute(id int, job *model.Job) error {
 			var ah action2.ActionHandler
 			if step.RunsOn != "" {
 				ah = action2.NewDockerEnv(step, ctx, jobWrapper.Output)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 			if step.Uses == "" {
 				ah = action2.NewShellAction(step, ctx, jobWrapper.Output)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 			if step.Uses == "git-checkout" {
 				ah = action2.NewGitAction(step, ctx, jobWrapper.Output)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 			if step.Uses == "hamster/ipfs" {
 				ah = action2.NewIpfsAction(step, ctx, jobWrapper.Output)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 			if step.Uses == "hamster/artifactory" {
 				ah = action2.NewArtifactoryAction(step, ctx, jobWrapper.Output)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 			if strings.Contains(step.Uses, "/") {
 				ah = action2.NewRemoteAction(step, ctx)
+				jobWrapper.Output.NewStep(step.Name)
 				err = executeAction(ah, jobWrapper)
 			}
 

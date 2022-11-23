@@ -34,8 +34,6 @@ func NewGitAction(step model.Step, ctx context.Context, output *output.Output) *
 }
 
 func (a *GitAction) Pre() error {
-	a.output.NewStage("git")
-
 	//TODO ... 检验 git 命令是否存在
 	return nil
 }
