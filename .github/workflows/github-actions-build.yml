@@ -9,7 +9,7 @@ jobs:
   package:
     strategy:
       matrix:
-        platform: [ ubuntu-latest,macos-latest ]
+        platform: [ ubuntu-latest,macos-latest,windows-latest ]
         go-version: [1.19]
         node-version: [18]
     runs-on: ${{ matrix.platform }}
@@ -25,11 +25,19 @@ jobs:
           node-version: ${{ matrix.node-version }}
       # You may need to manually build you frontend manually here, unless you have configured frontend build and install commands in wails.json.
       - name: frontend
+        if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
         run: |
           git clone https://github.com/hamster-shared/a-line.git -b develop
           cd a-line
           npm install && npm run build
           cp -r dist ../pkg/controller
+      - name: frontend
+        if: matrix.platform == 'windows-latest'
+        run: |
+          git clone https://github.com/hamster-shared/a-line.git -b develop
+          cd a-line
+          npm install && npm run build
+          copy .\dist ..\pkg\controller
       - name: go build
         run: go mod tidy && go build -o a-line-cli
 
