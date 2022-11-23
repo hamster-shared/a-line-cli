@@ -9,7 +9,7 @@ jobs:
   package:
     strategy:
       matrix:
-        platform: [ ubuntu-latest ]
+        platform: [ ubuntu-latest,macos-latest ]
         go-version: [1.19]
         node-version: [18]
     runs-on: ${{ matrix.platform }}
@@ -32,17 +32,28 @@ jobs:
           cp -r dist ../pkg/controller
       - name: go build
         run: go mod tidy && go build -o a-line-cli
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-      - name: upload artifacts windows
+
+      - name: upload artifacts linux
+        if: matrix.platform == 'ubuntu-latest'
         uses: actions/upload-artifact@v2
         with:
           name: a-line-cli-v1.0.0-linux-amd64.zip
           path: a-line-cli
+      - name: upload artifacts linux
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: a-line-cli-v1.0.0-darwin-amd64.zip
+          path: a-line-cli
 
-      - run : |
+      - name: Login to Docker Hub
+        if: matrix.platform == 'ubuntu-latest'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: build image
+        if: matrix.platform == 'ubuntu-latest'
+        run : |
           docker build -t hamstershare/a-line-cli:latest .
           docker push hamstershare/a-line-cli:latest

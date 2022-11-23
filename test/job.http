@@ -1,5 +1,5 @@
 ### create job
-POST http://59.80.34.156:38080/pipeline
+POST http://183.66.65.207:38080/api/pipeline
 Content-Type: application/json
 
 {
@@ -17,7 +17,7 @@ Content-Type: application/json
 }
 
 ### exec job
-POST http://59.80.34.156:38080/pipeline/test2/exec
+POST http://183.66.65.207:38080/api/pipeline/test2/exec
 Content-Type: application/json
 
 ### re exec job
