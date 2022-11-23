@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-//go:embed dist/*
+//go:embed dist
 var content embed.FS
 
 type HttpServer struct {
